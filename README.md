@@ -31,7 +31,7 @@
 -  To get the **"Application ID"** and **"Secret"**, (fundamental values for integrating Latch in any application), it’s necessary to register a developer account in [Latch's website](https://latch.elevenpaths.com). On the upper right side, click on **"Developer area"**. 
 
 
-###DOWNLOADING THE MODULE
+###DOWNLOADING THE PLUGIN/MODULE
  * When the account is activated, the user will be able to create applications with Latch and access to developer documentation, including existing SDKs and plugins. The user has to access again to [Developer area](https://latch.elevenpaths.com/www/developerArea), and browse his applications from **"My applications"** section in the side menu.
 
 * When creating an application, two fundamental fields are shown: **"Application ID"** and **"Secret"**, keep these for later use. There are some additional parameters to be chosen, as the application icon (that will be shown in Latch) and whether the application will support OTP  (One Time Password) or not.
@@ -135,7 +135,7 @@ We have to add the install dir of the overlay to the end of the current value, u
 
 (${INSTALL_DIR} must be replaced by the path to the folder where the overlay has been installed).
 
-And stop and start the server:
+And stop and start the server.
 
     root@debian:~# /etc/init.d/slapd stop
     root@debian:~# /etc/init.d/slapd start

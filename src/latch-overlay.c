@@ -188,7 +188,7 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
             } else {
 
-                if ( (match_offset[2] > 0) && (match_offset[3] > 0) &&  (match_offset[3] > match_offset[2]) ) {
+                if ( (match_offset[3] > match_offset[2]) ) {
 
                     id = malloc(((match_offset[3] - match_offset[2]) + 1) * sizeof(char));
 

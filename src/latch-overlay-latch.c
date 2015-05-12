@@ -195,7 +195,7 @@ latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id) {
 
 int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
 
-    int rc = LATCH_STATUS_UNLOCKED;
+    int rc = LATCH_STATUS_UNKNOWN;
     char *account_id = NULL;
     char *response = NULL;
     json_object *json_response = NULL;
@@ -239,6 +239,8 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
                             if ((json_object_object_get_ex(json_application, "status", &json_status) == TRUE) && (json_status != NULL)) {
                                 if (json_object_get_string(json_status) != NULL && strcmp("off", json_object_get_string(json_status)) == 0) {
                                     rc = LATCH_STATUS_LOCKED;
+                                } else if (json_object_get_string(json_status) != NULL && strcmp("on", json_object_get_string(json_status)) == 0) {
+                                    rc = LATCH_STATUS_UNLOCKED;
                                 }
                             }
                         }
@@ -258,6 +260,11 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
         }
 
         free(account_id);
+
+        if ((rc == LATCH_STATUS_UNKNOWN) && (cfg->sdk_stop_on_error == 1)) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: No valid response from backend but is required. Returning LATCH_STATUS_LOCKED\n", __func__);
+            rc = LATCH_STATUS_LOCKED;
+        }
 
     } else {
         if (cfg->required == 1) {

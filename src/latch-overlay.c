@@ -271,6 +271,7 @@ static int latch_overlay_db_init(BackendDB *be, ConfigReply *cr) {
     cfg->sdk_proxy = NULL;
     cfg->sdk_timeout = 2;
     cfg->sdk_curl_nosignal = 0;
+    cfg->sdk_stop_on_error = 0;
     cfg->sdk_tls_ca_file = NULL;
     cfg->sdk_tls_ca_path = NULL;
     cfg->sdk_tls_crl_file = NULL;
@@ -318,6 +319,7 @@ static int latch_overlay_db_open(BackendDB *be, ConfigReply *cr) {
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_host %s\n", __func__, cfg->sdk_host == NULL ? "NULL" : cfg->sdk_host);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_proxy %s\n", __func__, cfg->sdk_proxy == NULL ? "NULL" : cfg->sdk_proxy);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_timeout %d\n", __func__, cfg->sdk_timeout);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_stop_on_error %d\n", __func__, cfg->sdk_stop_on_error);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_curl_nosignal %d\n", __func__, cfg->sdk_curl_nosignal);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_tls_ca_file %s\n", __func__, cfg->sdk_tls_ca_file == NULL ? "NULL" : cfg->sdk_tls_ca_file);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_tls_ca_path %s\n", __func__, cfg->sdk_tls_ca_path == NULL ? "NULL" : cfg->sdk_tls_ca_path);

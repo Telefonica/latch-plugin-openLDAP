@@ -24,6 +24,7 @@
 
 #define LATCH_STATUS_UNLOCKED 0
 #define LATCH_STATUS_LOCKED 1
+#define LATCH_STATUS_UNKNOWN 2
 
 typedef struct latch_overlay_config_data {
     char  *application_id;
@@ -33,6 +34,7 @@ typedef struct latch_overlay_config_data {
     char  *sdk_proxy;
      int   sdk_timeout;
      int   sdk_curl_nosignal;
+     int   sdk_stop_on_error;
     char  *sdk_tls_ca_file;
     char  *sdk_tls_ca_path;
     char  *sdk_tls_crl_file;

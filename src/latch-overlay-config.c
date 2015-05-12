@@ -183,6 +183,13 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchRequired' "
           "DESC 'Latch Required' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-sdk-stop-on-error", "int", 2, 2, 0,
+          ARG_INT | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, sdk_stop_on_error),
+          "( OLcfgOvAt:99.22 "
+          "NAME 'olcLatchSDKStopOnError' "
+          "DESC 'Latch SDK Stop On Error' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
         { NULL, NULL, 0, 0, 0, ARG_IGNORED }
 };
 
@@ -198,6 +205,7 @@ ConfigOCs latch_overlay_ocs[] = {
           "      olcLatchSDKProxy $"
           "      olcLatchSDKTimeout $"
           "      olcLatchSDKCURLNoSignal $"
+          "      olcLatchSDKStopOnError $"
           "      olcLatchSDKTLSCAFile $"
           "      olcLatchSDKTLSCAPath $"
           "      olcLatchSDKTLSCRLFile $"

@@ -28,8 +28,8 @@
 
 #include "json/json.h"
 
-static char*
-latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id) {
+static int
+latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id, char **account_id) {
 
     LDAP *ld;
     int ldap_result;
@@ -45,7 +45,7 @@ latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id) {
     char *attr = NULL;
     BerElement *ber = NULL;
     struct berval **bvals = NULL;
-    char *rv = NULL;
+    int rv = ERROR;
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, ">>> %s\n", __func__);
 
@@ -132,6 +132,8 @@ latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id) {
                 }
                 else {
 
+                    rv = OK;
+
                     if ((entry = ldap_first_entry(ld, result)) == NULL) {
                         Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: No entries found.\n", __func__);
                     }
@@ -147,12 +149,12 @@ latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id) {
 
                                     if (bvals[0] != NULL) {
 
-                                        rv = malloc((bvals[0]->bv_len + 1) * sizeof(char));
+                                        *account_id = malloc((bvals[0]->bv_len + 1) * sizeof(char));
 
-                                        memcpy(rv, bvals[0]->bv_val, bvals[0]->bv_len);
-                                        rv[bvals[0]->bv_len] = '\0';
+                                        memcpy(*account_id, bvals[0]->bv_val, bvals[0]->bv_len);
+                                        *account_id[bvals[0]->bv_len] = '\0';
 
-                                        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Returning attribute value %s\n", __func__, rv);
+                                        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Returning attribute value %s\n", __func__, *account_id);
 
                                     }
 
@@ -207,68 +209,77 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, ">>> %s\n", __func__);
 
-    if ((account_id = latch_overlay_get_account_id(cfg, id)) != NULL) {
+    if (latch_overlay_get_account_id(cfg, id, &account_id) != ERROR) {
 
-        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: account_id %s\n", __func__, account_id);
+        if (account_id != NULL) {
 
-        if (cfg->operation_id == NULL) {
-            response = status(account_id);
-        } else {
-            response = operationStatus(account_id, cfg->operation_id);
-        }
+            Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: account_id %s\n", __func__, account_id);
 
-        if (response != NULL) {
+            if (cfg->operation_id == NULL) {
+                response = status(account_id);
+            } else {
+                response = operationStatus(account_id, cfg->operation_id);
+            }
 
-            Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: response %s\n", __func__, response);
+            if (response != NULL) {
 
-            json_response = json_tokener_parse(response);
+                Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: response %s\n", __func__, response);
 
-            if (json_response != NULL) {
+                json_response = json_tokener_parse(response);
 
-                if ((json_object_object_get_ex(json_response, "data", &json_data) == TRUE) && (json_data != NULL)) {
+                if (json_response != NULL) {
 
-                    if ((json_object_object_get_ex(json_data, "operations", &json_operations) == TRUE) && (json_operations != NULL)) {
+                    if ((json_object_object_get_ex(json_response, "data", &json_data) == TRUE) && (json_data != NULL)) {
 
-                        if (cfg->operation_id == NULL) {
-                            json_application_rc = json_object_object_get_ex(json_operations, cfg->application_id, &json_application);
-                        } else {
-                            json_application_rc = json_object_object_get_ex(json_operations, cfg->operation_id, &json_application);
-                        }
+                        if ((json_object_object_get_ex(json_data, "operations", &json_operations) == TRUE) && (json_operations != NULL)) {
 
-                        if ((json_application_rc) == TRUE && (json_application != NULL)) {
-                            if ((json_object_object_get_ex(json_application, "status", &json_status) == TRUE) && (json_status != NULL)) {
-                                if (json_object_get_string(json_status) != NULL && strcmp("off", json_object_get_string(json_status)) == 0) {
-                                    rc = LATCH_STATUS_LOCKED;
-                                } else if (json_object_get_string(json_status) != NULL && strcmp("on", json_object_get_string(json_status)) == 0) {
-                                    rc = LATCH_STATUS_UNLOCKED;
+                            if (cfg->operation_id == NULL) {
+                                json_application_rc = json_object_object_get_ex(json_operations, cfg->application_id, &json_application);
+                            } else {
+                                json_application_rc = json_object_object_get_ex(json_operations, cfg->operation_id, &json_application);
+                            }
+
+                            if ((json_application_rc) == TRUE && (json_application != NULL)) {
+                                if ((json_object_object_get_ex(json_application, "status", &json_status) == TRUE) && (json_status != NULL)) {
+                                    if (json_object_get_string(json_status) != NULL && strcmp("off", json_object_get_string(json_status)) == 0) {
+                                        rc = LATCH_STATUS_LOCKED;
+                                    } else if (json_object_get_string(json_status) != NULL && strcmp("on", json_object_get_string(json_status)) == 0) {
+                                        rc = LATCH_STATUS_UNLOCKED;
+                                    }
                                 }
                             }
+
                         }
 
                     }
 
+                    json_object_put(json_response);
+
                 }
 
-                json_object_put(json_response);
+                free(response);
 
+            } else {
+                Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: There has been an error communicating with the backend\n", __func__);
             }
 
-            free(response);
+            free(account_id);
+
+            if ((rc == LATCH_STATUS_UNKNOWN) && (cfg->sdk_stop_on_error == 1)) {
+                Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: No valid response from backend but is required. Returning LATCH_STATUS_LOCKED\n", __func__);
+                rc = LATCH_STATUS_LOCKED;
+            }
 
         } else {
-            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: There has been an error communicating with the backend\n", __func__);
-        }
-
-        free(account_id);
-
-        if ((rc == LATCH_STATUS_UNKNOWN) && (cfg->sdk_stop_on_error == 1)) {
-            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: No valid response from backend but is required. Returning LATCH_STATUS_LOCKED\n", __func__);
-            rc = LATCH_STATUS_LOCKED;
+            if (cfg->required == 1) {
+                Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: User is not paired but Latch is required. Returning LATCH_STATUS_LOCKED\n", __func__);
+                rc = LATCH_STATUS_LOCKED;
+            }
         }
 
     } else {
-        if (cfg->required == 1) {
-            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: User is not paired but Latch is required. Returning LATCH_STATUS_LOCKED\n", __func__);
+        if (cfg->ldap_stop_on_error == 1) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: No valid response from the LDAP server but is required. Returning LATCH_STATUS_LOCKED\n", __func__);
             rc = LATCH_STATUS_LOCKED;
         }
     }

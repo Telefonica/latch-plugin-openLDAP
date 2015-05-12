@@ -190,6 +190,13 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchSDKStopOnError' "
           "DESC 'Latch SDK Stop On Error' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-ldap-stop-on-error", "int", 2, 2, 0,
+          ARG_INT | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, ldap_stop_on_error),
+          "( OLcfgOvAt:99.23 "
+          "NAME 'olcLatchLDAPStopOnError' "
+          "DESC 'Latch LDAP Stop On Error' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
         { NULL, NULL, 0, 0, 0, ARG_IGNORED }
 };
 
@@ -219,6 +226,7 @@ ConfigOCs latch_overlay_ocs[] = {
           "      olcLatchLDAPSearchScope $"
           "      olcLatchLDAPAttribute $"
           "      olcLatchLDAPTLSCAFile $"
+          "      olcLatchLDAPStopOnError $"
           "      olcLatchRequired"
           "    )"
           ")",

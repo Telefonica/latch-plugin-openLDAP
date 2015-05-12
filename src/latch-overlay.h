@@ -22,6 +22,9 @@
 
 #include "latch.h"
 
+#define OK 0
+#define ERROR 1
+
 #define LATCH_STATUS_UNLOCKED 0
 #define LATCH_STATUS_LOCKED 1
 #define LATCH_STATUS_UNKNOWN 2
@@ -48,6 +51,7 @@ typedef struct latch_overlay_config_data {
     char  *ldap_search_scope;
     char  *ldap_attribute;
     char  *ldap_tls_ca_file;
+     int   ldap_stop_on_error;
      int   required;
 } latch_overlay_config_data;
 

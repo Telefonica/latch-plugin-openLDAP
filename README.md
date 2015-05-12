@@ -152,20 +152,14 @@ A complete listing of all configuration parameters is provided for reference. Th
 
 #####MANDATORY PARAMETERS
 
-Parameter name | Legacy name (no recommended) | Description
--- | -- | --
-olcLatchApplicationId  | latch-application-id | This parameter defines the application_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site.
-olcLatchSecret  | latch-secret | This parameter defines the secret the overlay will use to sign Latch backend calls. It can be obtained from the developer's area of the Latch web site.
-olcLatchLDAPURI | latch-ldap-uri | his parameter defines the protocol, server and port of the LDAP server in URL format. For example ldap://127.0.0.1:389
-olcLatchLDAPSearchBaseDN | latch-ldap-search-base-dn | This parameter defines the DN that will be used as base in the search operations.
- |  | The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation. 
-olcLatchLDAPSearchFilter | latch-ldap-search-filter | This parameter defines the search filter that will be used in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
-olcLatchLDAPAttribute | latch-ldap-attribute | This parameter defines the LDAP attribute where the account_id is stored.
-olcLatchLDAPTLSCAFile (required if LDAPS) | latch-ldap-tls-ca-file | This parameter defines the file in the system with the trusted CAs in PEM format that will be used to verify the certificate of the LDAPS server.
-
-
-
-
+- **olcLatchApplicationId** (latch-application-id): This parameter defines the application_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site.
+- **olcLatchSecret**  (latch-secret): This parameter defines the secret the overlay will use to sign Latch backend calls. It can be obtained from the developer's area of the Latch web site.
+- **olcLatchLDAPURI** (latch-ldap-uri): This parameter defines the protocol, server and port of the LDAP server in URL format. For example ldap://127.0.0.1:389
+- **olcLatchLDAPSearchBaseDN** (latch-ldap-search-base-dn): This parameter defines the DN that will be used as base in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
+- **olcLatchLDAPSearchFilter** (latch-ldap-search-filter): This parameter defines the search filter that will be used in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
+- **olcLatchLDAPAttribute** (latch-ldap-attribute): This parameter defines the LDAP attribute where the account_id is stored.
+- **olcLatchLDAPTLSCAFile** (latch-ldap-tls-ca-file). Required if LDAPS. This parameter defines the file in the system with the trusted CAs in PEM format that will be used to verify the certificate of the LDAPS server.
+ 
 #####OPTIONAL PARAMETERS
 
 Parameter name | Legacy name (no recommended) | Description

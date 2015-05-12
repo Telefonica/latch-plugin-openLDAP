@@ -202,6 +202,7 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
     json_object *json_data = NULL;
     json_object *json_operations = NULL;
     json_object *json_application = NULL;
+    json_bool json_application_rc = FALSE;
     json_object *json_status = NULL;
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, ">>> %s\n", __func__);
@@ -224,34 +225,22 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
 
             if (json_response != NULL) {
 
-                json_data = json_object_object_get(json_response, "data");
+                if ((json_object_object_get_ex(json_response, "data", &json_data) == TRUE) && (json_data != NULL)) {
 
-                if (json_data != NULL) {
-
-                    json_operations = json_object_object_get(json_data, "operations");
-
-                    if (json_operations != NULL) {
+                    if ((json_object_object_get_ex(json_data, "operations", &json_operations) == TRUE) && (json_operations != NULL)) {
 
                         if (cfg->operation_id == NULL) {
-                            json_application = json_object_object_get(json_operations, cfg->application_id);
+                            json_application_rc = json_object_object_get_ex(json_operations, cfg->application_id, &json_application);
                         } else {
-                            json_application = json_object_object_get(json_operations, cfg->operation_id);
+                            json_application_rc = json_object_object_get_ex(json_operations, cfg->operation_id, &json_application);
                         }
 
-                        if (json_application != NULL) {
-
-                            json_status = json_object_object_get(json_application, "status");
-
-                            if (json_status != NULL) {
-
+                        if ((json_application_rc) == TRUE && (json_application != NULL)) {
+                            if ((json_object_object_get_ex(json_application, "status", &json_status) == TRUE) && (json_status != NULL)) {
                                 if (json_object_get_string(json_status) != NULL && strcmp("off", json_object_get_string(json_status)) == 0) {
-
                                     rc = LATCH_STATUS_LOCKED;
-
                                 }
-
                             }
-
                         }
 
                     }

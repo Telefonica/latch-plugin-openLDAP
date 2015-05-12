@@ -46,6 +46,7 @@ typedef struct latch_overlay_config_data {
     char  *ldap_search_scope;
     char  *ldap_attribute;
     char  *ldap_tls_ca_file;
+     int   required;
 } latch_overlay_config_data;
 
 extern ConfigTable latch_overlay_config[];

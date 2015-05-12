@@ -288,6 +288,8 @@ static int latch_overlay_db_init(BackendDB *be, ConfigReply *cr) {
     cfg->ldap_attribute = NULL;
     cfg->ldap_tls_ca_file = NULL;
 
+    cfg->required = 0;
+
     on->on_bi.bi_private = cfg;
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
@@ -334,6 +336,8 @@ static int latch_overlay_db_open(BackendDB *be, ConfigReply *cr) {
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_search_scope %s\n", __func__, cfg->ldap_search_scope == NULL ? "NULL" : cfg->ldap_search_scope);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_attribute %s\n", __func__, cfg->ldap_attribute == NULL ? "NULL" : cfg->ldap_attribute);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_tls_ca_file %s\n", __func__, cfg->ldap_tls_ca_file == NULL ? "NULL" : cfg->ldap_tls_ca_file);
+
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->required %d\n", __func__, cfg->required);
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
 

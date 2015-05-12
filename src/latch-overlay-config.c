@@ -176,6 +176,13 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchLDAPTLSCAFile' "
           "DESC 'Latch LDAP TLS CA file' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-required", "int", 2, 2, 0,
+          ARG_INT | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, required),
+          "( OLcfgOvAt:99.21 "
+          "NAME 'olcLatchRequired' "
+          "DESC 'Latch Required' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
         { NULL, NULL, 0, 0, 0, ARG_IGNORED }
 };
 
@@ -203,7 +210,8 @@ ConfigOCs latch_overlay_ocs[] = {
           "      olcLatchLDAPSearchFilter $"
           "      olcLatchLDAPSearchScope $"
           "      olcLatchLDAPAttribute $"
-          "      olcLatchLDAPTLSCAFile"
+          "      olcLatchLDAPTLSCAFile $"
+          "      olcLatchRequired"
           "    )"
           ")",
           Cft_Overlay, latch_overlay_config },

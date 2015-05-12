@@ -253,15 +253,17 @@ int latch_overlay_check_latch(latch_overlay_config_data *cfg, char *id) {
 
             free(response);
 
-        }
-        else {
-
+        } else {
             Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: There has been an error communicating with the backend\n", __func__);
-
         }
 
         free(account_id);
 
+    } else {
+        if (cfg->required == 1) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: User is not paired but Latch is required. Returning LATCH_STATUS_LOCKED\n", __func__);
+            rc = LATCH_STATUS_LOCKED;
+        }
     }
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);

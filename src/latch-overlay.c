@@ -75,6 +75,42 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
         Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: No latchPattern in configuration. Using %s\n", __func__, DEFAULT_PATTERN);
     }
 
+    if (cfg->map_mode != NULL && (strcmp(cfg->map_mode, MAP_MODE_LDAP) == 0)) {
+
+        if (cfg->map_ldap_uri == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPURI in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_search_base_dn == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPSearchBaseDN in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_search_filter == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPSearchFilter in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_attribute == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPAttribute in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (strncasecmp(cfg->map_ldap_uri, "ldaps://", strlen("ldaps://")) == 0) {
+            if (cfg->map_ldap_tls_ca_file == NULL) {
+                Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPTLSCAFile in configuration!\n", __func__);
+                Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+                return SLAP_CB_CONTINUE;
+            }
+        }
+
+    }
+
     if (cfg->ldap_uri == NULL) {
         Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchLDAPURI in configuration!\n", __func__);
         Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);

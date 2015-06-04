@@ -1,6 +1,6 @@
 /*
  * Latch plugin for OpenLDAP 2.4
- * Copyright (C) 2014 Eleven Paths
+ * Copyright (C) 2014, 2015 Eleven Paths
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -127,14 +127,14 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchLDAPURI' "
           "DESC 'Latch LDAP URI' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-bind-dn", "uri", 2, 2, 0,
+        { "latch-ldap-bind-dn", "dn", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_bind_dn),
           "( OLcfgOvAt:99.14 "
           "NAME 'olcLatchLDAPBindDN' "
           "DESC 'Latch LDAP Bind DN' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-bind-password", "uri", 2, 2, 0,
+        { "latch-ldap-bind-password", "string", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_bind_password),
           "( OLcfgOvAt:99.15 "
@@ -148,28 +148,28 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchLDAPSearchBaseDN' "
           "DESC 'Latch LDAP Search Base DN' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-search-filter", "filter", 2, 2, 0,
+        { "latch-ldap-search-filter", "string", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_search_filter),
           "( OLcfgOvAt:99.17 "
           "NAME 'olcLatchLDAPSearchFilter' "
           "DESC 'Latch LDAP Search Filter' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-search-scope", "scope", 2, 2, 0,
+        { "latch-ldap-search-scope", "string", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_search_scope),
           "( OLcfgOvAt:99.18 "
           "NAME 'olcLatchLDAPSearchScope' "
           "DESC 'Latch LDAP Search Scope' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-attribute", "attribute", 2, 2, 0,
+        { "latch-ldap-attribute", "string", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_attribute),
           "( OLcfgOvAt:99.19 "
           "NAME 'olcLatchLDAPAttribute' "
           "DESC 'Latch LDAP Attribute' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
-        { "latch-ldap-tls-ca-file", "file", 2, 2, 0,
+        { "latch-ldap-tls-ca-file", "string", 2, 2, 0,
           ARG_STRING | ARG_OFFSET,
           (void *) offsetof(latch_overlay_config_data, ldap_tls_ca_file),
           "( OLcfgOvAt:99.20 "
@@ -197,6 +197,76 @@ ConfigTable latch_overlay_config[] = {
           "NAME 'olcLatchLDAPStopOnError' "
           "DESC 'Latch LDAP Stop On Error' "
           "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-mode", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_mode),
+          "( OLcfgOvAt:99.24 "
+          "NAME 'olcLatchMapMode' "
+          "DESC 'Latch Map Mode' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-uri", "uri", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_uri),
+          "( OLcfgOvAt:99.25 "
+          "NAME 'olcLatchMapLDAPURI' "
+          "DESC 'Latch Map LDAP URI' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-bind-dn", "dn", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_bind_dn),
+          "( OLcfgOvAt:99.26 "
+          "NAME 'olcLatchMapLDAPBindDN' "
+          "DESC 'Latch Map LDAP Bind DN' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-bind-password", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_bind_password),
+          "( OLcfgOvAt:99.27 "
+          "NAME 'olcLatchMapLDAPBindPassword' "
+          "DESC 'Latch Map LDAP Bind Password' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-search-base-dn", "dn", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_search_base_dn),
+          "( OLcfgOvAt:99.28 "
+          "NAME 'olcLatchMapLDAPSearchBaseDN' "
+          "DESC 'Latch Map LDAP Search Base DN' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-search-filter", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_search_filter),
+          "( OLcfgOvAt:99.29 "
+          "NAME 'olcLatchMapLDAPSearchFilter' "
+          "DESC 'Latch Map LDAP Search Filter' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-search-scope", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_search_scope),
+          "( OLcfgOvAt:99.30 "
+          "NAME 'olcLatchMapLDAPSearchScope' "
+          "DESC 'Latch Map LDAP Search Scope' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-attribute", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_attribute),
+          "( OLcfgOvAt:99.31 "
+          "NAME 'olcLatchMapLDAPAttribute' "
+          "DESC 'Latch Map LDAP Attribute' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-tls-ca-file", "string", 2, 2, 0,
+          ARG_STRING | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_tls_ca_file),
+          "( OLcfgOvAt:99.32 "
+          "NAME 'olcLatchMapLDAPTLSCAFile' "
+          "DESC 'Latch Map LDAP TLS CA file' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
+        { "latch-map-ldap-stop-on-error", "int", 2, 2, 0,
+          ARG_INT | ARG_OFFSET,
+          (void *) offsetof(latch_overlay_config_data, map_ldap_stop_on_error),
+          "( OLcfgOvAt:99.33 "
+          "NAME 'olcLatchMapLDAPStopOnError' "
+          "DESC 'Latch Map LDAP Stop On Error' "
+          "SYNTAX OMsDirectoryString SINGLE-VALUE )", NULL, NULL },
         { NULL, NULL, 0, 0, 0, ARG_IGNORED }
 };
 
@@ -218,6 +288,16 @@ ConfigOCs latch_overlay_ocs[] = {
           "      olcLatchSDKTLSCRLFile $"
           "      olcLatchExclude $"
           "      olcLatchPattern $"
+          "      olcLatchMapMode $"
+          "      olcLatchMapLDAPURI $"
+          "      olcLatchMapLDAPBindDN $"
+          "      olcLatchMapLDAPBindPassword $"
+          "      olcLatchMapLDAPSearchBaseDN $"
+          "      olcLatchMapLDAPSearchFilter $"
+          "      olcLatchMapLDAPSearchScope $"
+          "      olcLatchMapLDAPAttribute $"
+          "      olcLatchMapLDAPTLSCAFile $"
+          "      olcLatchMapLDAPStopOnError $"
           "      olcLatchLDAPURI $"
           "      olcLatchLDAPBindDN $"
           "      olcLatchLDAPBindPassword $"

@@ -31,20 +31,9 @@
 static int
 latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id, char **account_id) {
 
-    LDAP *ld;
-    int ldap_result;
-    struct berval credentials;
-    int version = LDAP_VERSION3;
-    int tls_new_ctx = 0;
-    int ldap_search_scope = LDAP_SCOPE_BASE;
+    int search_scope = LDAP_SCOPE_BASE;
     char *search_base_dn = NULL;
     char *search_filter = NULL;
-    char *search_attributes[] = { cfg->ldap_attribute, NULL };
-    LDAPMessage *result = NULL;
-    LDAPMessage *entry = NULL;
-    char *attr = NULL;
-    BerElement *ber = NULL;
-    struct berval **bvals = NULL;
     int rv = ERROR;
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, ">>> %s\n", __func__);
@@ -54,137 +43,14 @@ latch_overlay_get_account_id(latch_overlay_config_data *cfg, char *id, char **ac
 
     if (cfg->ldap_search_scope != NULL) {
         if (strcmp("onelevel", cfg->ldap_search_scope) == 0) {
-            ldap_search_scope = LDAP_SCOPE_ONELEVEL;
+            search_scope = LDAP_SCOPE_ONELEVEL;
         }
         else if (strcmp("subtree", cfg->ldap_search_scope) == 0) {
-            ldap_search_scope = LDAP_SCOPE_SUBTREE;
+            search_scope = LDAP_SCOPE_SUBTREE;
         }
     }
 
-    /* Initialize connection to LDAP server */
-
-    ldap_result = ldap_initialize(&ld, cfg->ldap_uri);
-
-    if (LDAP_SUCCESS != ldap_result) {
-        Log2(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Failed to initialize LDAP connection. Error: %s\n", __func__, ldap_err2string(ldap_result));
-    }
-    else {
-
-        /* Set LDAP version. */
-
-        ldap_result = ldap_set_option(ld, LDAP_OPT_PROTOCOL_VERSION, &version);
-
-        if (LDAP_OPT_SUCCESS != ldap_result) {
-            Log3(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Unable to set LDAP protocol version to %d. Error: %s\n", __func__, version, ldap_err2string(ldap_result));
-        }
-        else {
-
-            /* If LDAPS set the CA certificates file */
-
-            if (strncasecmp(cfg->ldap_uri, "ldaps://", strlen("ldaps://")) == 0) {
-
-                ldap_result = ldap_set_option(ld, LDAP_OPT_X_TLS_CACERTFILE, cfg->ldap_tls_ca_file);
-
-                if (LDAP_OPT_SUCCESS != ldap_result) {
-                    Log3(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Unable to set the TLS CA file to %s. Error: %s\n", __func__, cfg->ldap_tls_ca_file, ldap_err2string(ldap_result));
-                }
-
-                ldap_result = ldap_set_option(ld, LDAP_OPT_X_TLS_NEWCTX, &tls_new_ctx);
-
-                if (LDAP_OPT_SUCCESS != ldap_result) {
-                    Log3(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Unable to set the TLS NEWCTX option to %d. Error: %s\n", __func__, tls_new_ctx, ldap_err2string(ldap_result));
-                }
-
-            }
-
-            if (cfg->ldap_bind_dn != NULL && cfg->ldap_bind_password != NULL) {
-
-                /* We try to bind with provided credentials */
-
-                credentials.bv_val = cfg->ldap_bind_password;
-                credentials.bv_len = strlen(cfg->ldap_bind_password);
-
-                ldap_result = ldap_sasl_bind_s(ld, cfg->ldap_bind_dn, LDAP_SASL_SIMPLE, &credentials, NULL, NULL, NULL);
-
-            }
-            else {
-
-                /* Anonymous bind */
-
-                credentials.bv_val = NULL;
-                credentials.bv_len = 0;
-
-                ldap_result = ldap_sasl_bind_s(ld, NULL, LDAP_SASL_SIMPLE, &credentials, NULL, NULL, NULL);
-
-            }
-
-            if (LDAP_SUCCESS != ldap_result) {
-                Log2(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Failed to bind to LDAP server. Error: %s\n", __func__, ldap_err2string(ldap_result));
-            }
-            else {
-
-                /* Search the LDAP for the user entry */
-
-                ldap_result = ldap_search_ext_s(ld, search_base_dn, ldap_search_scope, search_filter, search_attributes, 0, NULL, NULL, NULL, LDAP_NO_LIMIT, &result );
-
-                if (LDAP_SUCCESS != ldap_result) {
-                    Log2(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s: Failed to search the LDAP server. Error: %s\n", __func__, ldap_err2string(ldap_result));
-                }
-                else {
-
-                    rv = OK;
-
-                    if ((entry = ldap_first_entry(ld, result)) == NULL) {
-                        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: No entries found.\n", __func__);
-                    }
-                    else {
-
-                        for (attr = ldap_first_attribute(ld, entry, &ber) ; attr != NULL ; attr = ldap_next_attribute(ld, entry, ber)) {
-
-                            Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Processing attribute %s\n", __func__, attr);
-
-                            if (strcmp(cfg->ldap_attribute, attr) == 0) {
-
-                                if ((bvals = ldap_get_values_len(ld, entry, attr)) != NULL) {
-
-                                    if (bvals[0] != NULL) {
-
-                                        *account_id = malloc((bvals[0]->bv_len + 1) * sizeof(char));
-
-                                        memcpy(*account_id, bvals[0]->bv_val, bvals[0]->bv_len);
-                                        *account_id[bvals[0]->bv_len] = '\0';
-
-                                        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Returning attribute value %s\n", __func__, *account_id);
-
-                                    }
-
-                                    ldap_value_free_len(bvals);
-
-                                }
-
-                            }
-
-                            ldap_memfree(attr);
-
-                        }
-
-                        if (ber != NULL) {
-                            ber_free(ber, 0);
-                        }
-
-                    }
-
-                    ldap_msgfree(result);
-
-                }
-
-            }
-
-        }
-
-        ldap_unbind_ext( ld, NULL, NULL );
-
-    }
+    rv = latch_overlay_get_entry_attribute(cfg->ldap_uri, cfg->ldap_bind_dn, cfg->ldap_bind_password, search_base_dn, search_filter, search_scope, cfg->ldap_attribute, cfg->ldap_tls_ca_file, account_id);
 
     free(search_base_dn);
     free(search_filter);

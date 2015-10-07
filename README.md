@@ -152,37 +152,42 @@ A complete listing of all configuration parameters is provided for reference. Th
 
 #####MANDATORY PARAMETERS
 
-Parameter name | Legacy name (no recommended) | Description
--- | -- | --
-olcLatchApplicationId  | latch-application-id | This parameter defines the application_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site.
-olcLatchSecret  | latch-secret | This parameter defines the secret the overlay will use to sign Latch backend calls. It can be obtained from the developer's area of the Latch web site.
-olcLatchLDAPURI | latch-ldap-uri | his parameter defines the protocol, server and port of the LDAP server in URL format. For example ldap://127.0.0.1:389
-olcLatchLDAPSearchBaseDN | latch-ldap-search-base-dn | This parameter defines the DN that will be used as base in the search operations.
- |  | The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation. 
-olcLatchLDAPSearchFilter | latch-ldap-search-filter | This parameter defines the search filter that will be used in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
-olcLatchLDAPAttribute | latch-ldap-attribute | This parameter defines the LDAP attribute where the account_id is stored.
-olcLatchLDAPTLSCAFile (required if LDAPS) | latch-ldap-tls-ca-file | This parameter defines the file in the system with the trusted CAs in PEM format that will be used to verify the certificate of the LDAPS server.
-
-
-
-
+- **olcLatchApplicationId** (latch-application-id): This parameter defines the application_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site.
+- **olcLatchSecret**  (latch-secret): This parameter defines the secret the overlay will use to sign Latch backend calls. It can be obtained from the developer's area of the Latch web site.
+- **olcLatchLDAPURI** (latch-ldap-uri): This parameter defines the protocol, server and port of the LDAP server in URL format. For example ldap://127.0.0.1:389
+- **olcLatchLDAPSearchBaseDN** (latch-ldap-search-base-dn): This parameter defines the DN that will be used as base in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation (or the mapped identifier if map mode is ldap).
+- **olcLatchLDAPSearchFilter** (latch-ldap-search-filter): This parameter defines the search filter that will be used in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation  (or the mapped identifier if map mode is ldap).
+- **olcLatchLDAPAttribute** (latch-ldap-attribute): This parameter defines the LDAP attribute where the account_id is stored.
+- **olcLatchLDAPTLSCAFile** (latch-ldap-tls-ca-file). Required if LDAPS. This parameter defines the file in the system with the trusted CAs in PEM format that will be used to verify the certificate of the LDAPS server.
+ 
 #####OPTIONAL PARAMETERS
 
-Parameter name | Legacy name (no recommended) | Description
--- | -- | --
-olcLatchOperationId | latch-operation-id | This parameter defines the operation_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site. If this parameter is configured, the overlay will ask for the status of the latch associated with this operation_id and not for the status of the latch associated with the application_id (its parent).
-olcLatchSDKHost | latch-sdk-host | This parameter defines the protocol, server and port of the Latch backend. The default value, if not specified, is the production backend, located at https://latch.elevenpaths.com.
-olcLatchSDKProxy | latch-sdk-proxy | This parameter defines the HTTP/HTTPS proxy to be used in the Latch backend calls.
-olcLatchSDKTimeout | latch-sdk-timeout | This parameters defines the timeout for the Latch backend calls. The default value is 2 seconds. 0 means no timeout.
-olcLatchSDKCURLNoSignal | latch-sdk-curl-nosignal | This parameter defines if the cURL option CURLOPT_NOSIGNAL should be set to 1. Needed if libcurl < 7.32.0. Disables DNS timeouts.
-olcLatchSDKTLSCAFile | latch-sdk-tls-ca-file | This parameter defines the file with trusted CAs in PEM format that will be used to verify the Latch backend certificate. It has priority over olcLatchSDKTLSCAPath. If none of them are set, libcurl default behavior will be used.
-olcLatchSDKTLSCAPath | latch-sdk-tls-ca-path | This parameter defines the directory with trusted CAs (see c_rehash) that will be used to verify the Latch backend certificate. olcLatchSDKTLSCAFile has priority over this parameter. If none of them are set, libcurl default behavior will be used.
-olcLatchSDKTLSCRLFile | latch-sdk-tls-crl-file | This parameter defines the file with the full chain of CRLs in PEM format (certificate and issuers) that will be used to check if the certificate of the Latch backend or any CA in the chain has been revoked. Must be valid and not expired.
-olcLatchExclude | latch-exclude | A multi-valued attribute used to specify a list of regular expressions. If the DN of the object requesting the LDAP BIND operation matches any of these expressions, the overlay won't check any latch.
-olcLatchPattern | latch-pattern | This parameter defines the regular expression that will be used to capture the identifier of the user associated with the DN of the object requesting the LDAP BIND operation. Its default value is uid=(.*?),.*
-olcLatchLDAPBindDN | latch-ldap-bind-dn | This parameter defines the DN that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindPassword are not specified, the connections will be anonymous.
-olcLatchLDAPBindPassword | latch-ldap-bind-password | This parameter defines the password that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindDN are not specified, the connections will be anonymous.
-olcLatchLDAPSearchScope | latch-ldap-search-scope | This parameter defines the search scope that will be used in the search operations. If not specified, the search operations will be done just over the DN specified in the olcLatchLDAPSearchBaseDN parameter (base) but this can be modified configuring this parameter to onelevel (the search operations will be done over the specified DN and its direct children) or subtree (the search operations will be done over the specified DN and all its children).
+- **olcLatchOperationId** (latch-operation-id): This parameter defines the operation_id the overlay will use in Latch backend calls. It can be obtained from the developer's area of the Latch web site. If this parameter is configured, the overlay will ask for the status of the latch associated with this operation_id and not for the status of the latch associated with the application_id (its parent).
+- **olcLatchSDKHost** (latch-sdk-host): This parameter defines the protocol, server and port of the Latch backend. The default value, if not specified, is the production backend, located at https://latch.elevenpaths.com.
+- **olcLatchSDKProxy** (latch-sdk-proxy): This parameter defines the HTTP/HTTPS proxy to be used in the Latch backend calls.
+- **olcLatchSDKTimeout** (latch-sdk-timeout): This parameters defines the timeout for the Latch backend calls. The default value is 2 seconds. 0 means no timeout.
+- **olcLatchSDKCURLNoSignal** (latch-sdk-curl-nosignal): This parameter defines if the cURL option CURLOPT_NOSIGNAL should be set to 1. Needed if libcurl < 7.32.0. Disables DNS timeouts.
+- **olcLatchSDKTLSCAFile** (latch-sdk-tls-ca-file): This parameter defines the file with trusted CAs in PEM format that will be used to verify the Latch backend certificate. It has priority over olcLatchSDKTLSCAPath. If none of them are set, libcurl default behavior will be used.
+- **olcLatchSDKTLSCAPath** (latch-sdk-tls-ca-path): This parameter defines the directory with trusted CAs (see c_rehash) that will be used to verify the Latch backend certificate. olcLatchSDKTLSCAFile has priority over this parameter. If none of them are set, libcurl default behavior will be used.
+- **olcLatchSDKTLSCRLFile** (latch-sdk-tls-crl-file): This parameter defines the file with the full chain of CRLs in PEM format (certificate and issuers) that will be used to check if the certificate of the Latch backend or any CA in the chain has been revoked. Must be valid and not expired.
+- **olcLatchSDKStopOnError** (latch-sdk-stop-on-error): If this parameter is set to **1** an INVALID CREDENTIALS LDAP error (49) will be returned in case there are problems communicating with the Latch backend.
+- **olcLatchExclude** (latch-exclude): A multi-valued attribute used to specify a list of regular expressions. If the DN of the object requesting the LDAP BIND operation matches any of these expressions, the overlay won't check any latch.
+- **olcLatchPattern** (latch-pattern): This parameter defines the regular expression that will be used to capture the identifier of the user associated with the DN of the object requesting the LDAP BIND operation. Its default value is uid=(.*?),.*
+- **olcLatchMapMode** (latch-map-mode): This parameter defines how the user identifier is used to obtain the Latch account id. If it's specified and its value is ldap, the user identifier captured from the bind DN is used to obtain an attribute of an LDAP entry which will be used as the new user identifier.
+- **olcLatchMapLDAPURI** (latch-map-ldap-uri): Required if map mode is LDAP. This parameter defines the protocol, server and port of the LDAP server in URL format. For example ldap://127.0.0.1:389
+- **olcLatchMapLDAPBindDN** (latch-map-ldap-bind-dn): This parameter defines the DN that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindPassword are not specified, the connections will be anonymous.
+- **olcLatchMapLDAPBindPassword** (latch-map-ldap-bind-password): This parameter defines the password that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindDN are not specified, the connections will be anonymous.
+- **olcLatchMapLDAPSearchBaseDN** (latch-map-ldap-search-base-dn): Required if map mode is LDAP. This parameter defines the DN that will be used as base in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
+- **olcLatchMapLDAPSearchFilter** (latch-map-ldap-search-filter): Required if map mode is LDAP. This parameter defines the search filter that will be used in the search operations. The string @@@USER@@@ will we replaced by the user's identifier that the overlay has extracted from the DN used in the BIND operation.
+- **olcLatchMapLDAPSearchScope** (latch-map-ldap-search-scope): This parameter defines the search scope that will be used in the search operations. If not specified, the search operations will be done just over the DN specified in the olcLatchLDAPSearchBaseDN parameter (base) but this can be modified configuring this parameter to onelevel (the search operations will be done over the specified DN and its direct children) or subtree (the search operations will be done over the specified DN and all its children).
+- **olcLatchMapLDAPAttribute** (latch-map-ldap-attribute): Required if map mode is LDAP. This parameter defines the LDAP attribute where the new user identifier is stored.
+- **olcLatchMapLDAPTLSCAFile** (latch-map-ldap-tls-ca-file). Required if map mode is LDAP and protocol is LDAPS. This parameter defines the file in the system with the trusted CAs in PEM format that will be used to verify the certificate of the LDAPS server.
+- **olcLatchMapLDAPStopOnError** (latch-map-ldap-stop-on-error): If this parameter is set to **1** an INVALID CREDENTIALS LDAP error (49) will be returned in case there are problems communicating with the LDAP directory user to map the user identifier.  
+- **olcLatchRequired** (latch-required): If this parameter is set to **1** BIND requests of users that don't have their accounts paired with Latch will result in an INVALID CREDENTIALS LDAP error (49).
+- **olcLatchLDAPBindDN** (latch-ldap-bind-dn): This parameter defines the DN that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindPassword are not specified, the connections will be anonymous.
+- **olcLatchLDAPBindPassword** (latch-ldap-bind-password): This parameter defines the password that will be used to authenticate the connections to the LDAP server. If this parameter and the olcLatchLDAPBindDN are not specified, the connections will be anonymous.
+- **olcLatchLDAPSearchScope** (latch-ldap-search-scope): This parameter defines the search scope that will be used in the search operations. If not specified, the search operations will be done just over the DN specified in the olcLatchLDAPSearchBaseDN parameter (base) but this can be modified configuring this parameter to onelevel (the search operations will be done over the specified DN and its direct children) or subtree (the search operations will be done over the specified DN and all its children).
+- **olcLatchLDAPStopOnError** (latch-ldap-stop-on-error): If this parameter is set to **1** an INVALID CREDENTIALS LDAP error (49) will be returned in case there are problems communicating with the LDAP directory where pairing information is stored.
 
 
 ###UNINSTALLING THE MODULE IN OpenLDAP

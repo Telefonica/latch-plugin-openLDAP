@@ -1,6 +1,6 @@
 /*
  * Latch plugin for OpenLDAP 2.4
- * Copyright (C) 2014 Eleven Paths
+ * Copyright (C) 2014, 2015 Eleven Paths
  *
  * This library is free software; you can redistribute it and/or
  * modify it under the terms of the GNU Lesser General Public
@@ -35,12 +35,14 @@ static slap_overinst latch_overlay;
 static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
     int i = 0;
-    int rv = 0;
+    int rc = 0;
+    int check_latch = 0;
     int error_offset = 0;
     int excluded = 0;
     int match_offset[6];
     char *dn = NULL;
     char *id = NULL;
+    char *mapped_id = NULL;
     const char *error;
     latch_overlay_config_data *cfg = NULL;
     pcre *exclude_re;
@@ -71,6 +73,42 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
     if (cfg->pattern == NULL) {
         Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: No latchPattern in configuration. Using %s\n", __func__, DEFAULT_PATTERN);
+    }
+
+    if (cfg->map_mode != NULL && (strcmp(cfg->map_mode, MAP_MODE_LDAP) == 0)) {
+
+        if (cfg->map_ldap_uri == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPURI in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_search_base_dn == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPSearchBaseDN in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_search_filter == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPSearchFilter in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (cfg->map_ldap_attribute == NULL) {
+            Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPAttribute in configuration!\n", __func__);
+            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+            return SLAP_CB_CONTINUE;
+        }
+
+        if (strncasecmp(cfg->map_ldap_uri, "ldaps://", strlen("ldaps://")) == 0) {
+            if (cfg->map_ldap_tls_ca_file == NULL) {
+                Log1(LDAP_DEBUG_ANY, LDAP_LEVEL_ERR, "    %s failed. No latchMapLDAPTLSCAFile in configuration!\n", __func__);
+                Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
+                return SLAP_CB_CONTINUE;
+            }
+        }
+
     }
 
     if (cfg->ldap_uri == NULL) {
@@ -124,7 +162,7 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
             if ((exclude_re = pcre_compile(cfg->excludes[i], 0, &error, &error_offset, NULL)) != NULL) {
 
-                if ((rv = pcre_exec(exclude_re, NULL, dn, strlen(dn), 0, 0, match_offset, 6)) > 0) {
+                if ((rc = pcre_exec(exclude_re, NULL, dn, strlen(dn), 0, 0, match_offset, 6)) > 0) {
 
                     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: dn matched exclude %s\n", __func__, cfg->excludes[i]);
 
@@ -182,13 +220,13 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
         if ((re = pcre_compile(cfg->pattern == NULL ? DEFAULT_PATTERN : cfg->pattern, 0, &error, &error_offset, NULL)) != NULL) {
 
-            if ((rv = pcre_exec(re, NULL, dn, strlen(dn), 0, 0, match_offset, 6)) != 2) {
+            if ((rc = pcre_exec(re, NULL, dn, strlen(dn), 0, 0, match_offset, 6)) != 2) {
 
-                Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: pcre_exec returned %d\n", __func__, rv);
+                Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: pcre_exec returned %d\n", __func__, rc);
 
             } else {
 
-                if ( (match_offset[2] > 0) && (match_offset[3] > 0) &&  (match_offset[3] > match_offset[2]) ) {
+                if ( (match_offset[3] > match_offset[2]) ) {
 
                     id = malloc(((match_offset[3] - match_offset[2]) + 1) * sizeof(char));
 
@@ -197,15 +235,37 @@ static int latch_overlay_bind_response(Operation *op, SlapReply *rs) {
 
                     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: id %s\n", __func__, id);
 
-                    if (latch_overlay_check_latch(cfg, id) == LATCH_STATUS_LOCKED) {
+                    if (cfg->map_mode != NULL && (strcmp(cfg->map_mode, MAP_MODE_LDAP) == 0)) {
 
-                        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: latch is locked\n", __func__);
+                        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: map mode is %s\n", __func__, cfg->map_mode);
 
-                        rs->sr_err = LDAP_INVALID_CREDENTIALS;
+                        rc = latch_overlay_map_ldap(cfg, id, &mapped_id);
 
+                        Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: latch_overlay_map_ldap returned %d\n", __func__, rc);
+
+                        if (rc == ERROR) {
+                            if (cfg->map_ldap_stop_on_error == 1) {
+                                rs->sr_err = LDAP_INVALID_CREDENTIALS;
+                            }
+                        } else {
+                            if (mapped_id != NULL) {
+                                check_latch = 1;
+                            }
+                        }
+
+                    } else {
+                        check_latch = 1;
+                    }
+
+                    if (check_latch ==1) {
+                        if (latch_overlay_check_latch(cfg, mapped_id == NULL ? id : mapped_id) == LATCH_STATUS_LOCKED) {
+                            Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: latch is locked\n", __func__);
+                            rs->sr_err = LDAP_INVALID_CREDENTIALS;
+                        }
                     }
 
                     free(id);
+                    free(mapped_id);
 
                 }
 
@@ -271,6 +331,7 @@ static int latch_overlay_db_init(BackendDB *be, ConfigReply *cr) {
     cfg->sdk_proxy = NULL;
     cfg->sdk_timeout = 2;
     cfg->sdk_curl_nosignal = 0;
+    cfg->sdk_stop_on_error = 0;
     cfg->sdk_tls_ca_file = NULL;
     cfg->sdk_tls_ca_path = NULL;
     cfg->sdk_tls_crl_file = NULL;
@@ -279,6 +340,16 @@ static int latch_overlay_db_init(BackendDB *be, ConfigReply *cr) {
     cfg->excludes[0] = NULL;
 
     cfg->pattern = NULL;
+    cfg->map_mode = NULL;
+    cfg->map_ldap_uri = NULL;
+    cfg->map_ldap_bind_dn = NULL;
+    cfg->map_ldap_bind_password = NULL;
+    cfg->map_ldap_search_base_dn = NULL;
+    cfg->map_ldap_search_filter = NULL;
+    cfg->map_ldap_search_scope = NULL;
+    cfg->map_ldap_attribute = NULL;
+    cfg->map_ldap_tls_ca_file = NULL;
+    cfg->map_ldap_stop_on_error = 0;
     cfg->ldap_uri = NULL;
     cfg->ldap_bind_dn = NULL;
     cfg->ldap_bind_password = NULL;
@@ -287,6 +358,8 @@ static int latch_overlay_db_init(BackendDB *be, ConfigReply *cr) {
     cfg->ldap_search_scope = NULL;
     cfg->ldap_attribute = NULL;
     cfg->ldap_tls_ca_file = NULL;
+    cfg->ldap_stop_on_error = 0;
+    cfg->required = 0;
 
     on->on_bi.bi_private = cfg;
 
@@ -316,6 +389,7 @@ static int latch_overlay_db_open(BackendDB *be, ConfigReply *cr) {
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_host %s\n", __func__, cfg->sdk_host == NULL ? "NULL" : cfg->sdk_host);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_proxy %s\n", __func__, cfg->sdk_proxy == NULL ? "NULL" : cfg->sdk_proxy);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_timeout %d\n", __func__, cfg->sdk_timeout);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_stop_on_error %d\n", __func__, cfg->sdk_stop_on_error);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_curl_nosignal %d\n", __func__, cfg->sdk_curl_nosignal);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_tls_ca_file %s\n", __func__, cfg->sdk_tls_ca_file == NULL ? "NULL" : cfg->sdk_tls_ca_file);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->sdk_tls_ca_path %s\n", __func__, cfg->sdk_tls_ca_path == NULL ? "NULL" : cfg->sdk_tls_ca_path);
@@ -326,6 +400,16 @@ static int latch_overlay_db_open(BackendDB *be, ConfigReply *cr) {
     }
 
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->pattern %s\n", __func__, cfg->pattern == NULL ? "NULL" : cfg->pattern);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_mode %s\n", __func__, cfg->map_mode == NULL ? "NULL" : cfg->map_mode);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_uri %s\n", __func__, cfg->map_ldap_uri == NULL ? "NULL" : cfg->map_ldap_uri);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_bind_bn %s\n", __func__, cfg->map_ldap_bind_dn == NULL ? "NULL" : cfg->map_ldap_bind_dn);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_bind_password %s\n", __func__, cfg->map_ldap_bind_password == NULL ? "NULL" : cfg->map_ldap_bind_password);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_search_base_dn %s\n", __func__, cfg->map_ldap_search_base_dn == NULL ? "NULL" : cfg->map_ldap_search_base_dn);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_search_filter %s\n", __func__, cfg->map_ldap_search_filter == NULL ? "NULL" : cfg->map_ldap_search_filter);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_search_scope %s\n", __func__, cfg->map_ldap_search_scope == NULL ? "NULL" : cfg->map_ldap_search_scope);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_attribute %s\n", __func__, cfg->map_ldap_attribute == NULL ? "NULL" : cfg->map_ldap_attribute);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_tls_ca_file %s\n", __func__, cfg->map_ldap_tls_ca_file == NULL ? "NULL" : cfg->map_ldap_tls_ca_file);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->map_ldap_stop_on_error %d\n", __func__, cfg->map_ldap_stop_on_error);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_uri %s\n", __func__, cfg->ldap_uri == NULL ? "NULL" : cfg->ldap_uri);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_bind_bn %s\n", __func__, cfg->ldap_bind_dn == NULL ? "NULL" : cfg->ldap_bind_dn);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_bind_password %s\n", __func__, cfg->ldap_bind_password == NULL ? "NULL" : cfg->ldap_bind_password);
@@ -334,6 +418,8 @@ static int latch_overlay_db_open(BackendDB *be, ConfigReply *cr) {
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_search_scope %s\n", __func__, cfg->ldap_search_scope == NULL ? "NULL" : cfg->ldap_search_scope);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_attribute %s\n", __func__, cfg->ldap_attribute == NULL ? "NULL" : cfg->ldap_attribute);
     Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_tls_ca_file %s\n", __func__, cfg->ldap_tls_ca_file == NULL ? "NULL" : cfg->ldap_tls_ca_file);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->ldap_stop_on_error %d\n", __func__, cfg->ldap_stop_on_error);
+    Log2(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: cfg->required %d\n", __func__, cfg->required);
 
     Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "<<< %s\n", __func__);
 
@@ -413,6 +499,60 @@ static int latch_overlay_db_close(BackendDB *be, ConfigReply *cr) {
         Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->pattern\n", __func__);
         free(cfg->pattern);
         cfg->pattern = NULL;
+    }
+
+    if (cfg->map_mode != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_mode\n", __func__);
+        free(cfg->map_mode);
+        cfg->map_mode = NULL;
+    }
+
+    if (cfg->map_ldap_uri != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_uri\n", __func__);
+        free(cfg->map_ldap_uri);
+        cfg->map_ldap_uri = NULL;
+    }
+
+    if (cfg->map_ldap_bind_dn != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_bind_dn\n", __func__);
+        free(cfg->map_ldap_bind_dn);
+        cfg->map_ldap_bind_dn = NULL;
+    }
+
+    if (cfg->map_ldap_bind_password != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_bind_password\n", __func__);
+        free(cfg->map_ldap_bind_password);
+        cfg->map_ldap_bind_password = NULL;
+    }
+
+    if (cfg->map_ldap_search_base_dn != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_search_base_dn\n", __func__);
+        free(cfg->map_ldap_search_base_dn);
+        cfg->map_ldap_search_base_dn = NULL;
+    }
+
+    if (cfg->map_ldap_search_filter != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_search_filter\n", __func__);
+        free(cfg->map_ldap_search_filter);
+        cfg->map_ldap_search_filter = NULL;
+    }
+
+    if (cfg->map_ldap_search_scope != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_search_scope\n", __func__);
+        free(cfg->map_ldap_search_scope);
+        cfg->map_ldap_search_scope = NULL;
+    }
+
+    if (cfg->map_ldap_attribute != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_attribute\n", __func__);
+        free(cfg->map_ldap_attribute);
+        cfg->map_ldap_attribute = NULL;
+    }
+
+    if (cfg->map_ldap_tls_ca_file != NULL) {
+        Log1(LDAP_DEBUG_TRACE, LDAP_LEVEL_DEBUG, "    %s: Freeing cfg->map_ldap_tls_cacert_file\n", __func__);
+        free(cfg->map_ldap_tls_ca_file);
+        cfg->map_ldap_tls_ca_file = NULL;
     }
 
     if (cfg->ldap_uri != NULL) {
